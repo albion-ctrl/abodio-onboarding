@@ -184,6 +184,14 @@ export default function AbodioPrototype() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Reset home detail inputs when navigating back before step 3
+  useEffect(() => {
+    if (["splash", "welcome", "goal", "home-type"].includes(screen)) {
+      setHomeName("");
+      setHomeYear("");
+    }
+  }, [screen]);
+
   const completedCount = Object.values(checks).filter(Boolean).length;
   const totalChecks = persona?.checklist?.length || 4;
   const pct = Math.round((completedCount / totalChecks) * 100);
