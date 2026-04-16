@@ -131,6 +131,186 @@ const I = {
   Crown: (p) => <svg width={p?.s||18} height={p?.s||18} viewBox="0 0 24 24" fill="none" stroke={p?.c||"currentColor"} strokeWidth="1.8" strokeLinejoin="round"><path d="M2 20h20l-2-12-5 5-3-7-3 7-5-5z"/><rect x="2" y="20" width="20" height="2" rx="1"/></svg>,
 };
 
+// ─── GOOGLE PLACES AUTOCOMPLETE ─────────────────────────────────────────────
+const GMAP_ID = "gmap-places-script";
+
+function loadGooglePlaces(apiKey) {
+  return new Promise((resolve, reject) => {
+    if (window.google?.maps?.places) { resolve(); return; }
+    const existing = document.getElementById(GMAP_ID);
+    if (existing) { existing.addEventListener("load", resolve); existing.addEventListener("error", reject); return; }
+    const s = document.createElement("script");
+    s.id = GMAP_ID;
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    s.async = true; s.defer = true;
+    s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+const GooglePlacesInput = ({ onChange, onAddressSelect }) => {
+  const [query, setQuery]           = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [isLoading, setIsLoading]   = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [apiReady, setApiReady]     = useState(false);
+  const [apiError, setApiError]     = useState(false);
+  const [activeIdx, setActiveIdx]   = useState(-1);
+  const [focused, setFocused]       = useState(false);
+  const debounceRef   = useRef(null);
+  const sessionRef    = useRef(null);
+  const acRef         = useRef(null);
+  const psRef         = useRef(null);
+  const containerRef  = useRef(null);
+
+  const C = { border:"#E2E8E5", focus:"#1A7B7E", ph:"#8E9A93", text:"#1A1A1A", bg:"#FFFFFF", teal:"#1A7B7E", gray:"#6B7280", hover:"#E6F3F3" };
+
+  useEffect(() => {
+    const key = import.meta.env.VITE_GOOGLE_MAPS_KEY;
+    if (!key) { setApiError(true); return; }
+    loadGooglePlaces(key)
+      .then(() => {
+        acRef.current = new window.google.maps.places.AutocompleteService();
+        psRef.current = new window.google.maps.places.PlacesService(document.createElement("div"));
+        setApiReady(true);
+      })
+      .catch(() => setApiError(true));
+    return () => {
+      acRef.current = null; psRef.current = null;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!query || query.length < 2 || !apiReady) { setSuggestions([]); setShowDropdown(false); return; }
+    debounceRef.current = setTimeout(() => {
+      if (!sessionRef.current) sessionRef.current = new window.google.maps.places.AutocompleteSessionToken();
+      setIsLoading(true);
+      acRef.current.getPlacePredictions(
+        { input: query, types: ["address"], sessionToken: sessionRef.current },
+        (preds, status) => {
+          setIsLoading(false);
+          const ok = window.google.maps.places.PlacesServiceStatus.OK;
+          setSuggestions(preds?.length && status === ok ? preds : []);
+          setShowDropdown(true);
+        }
+      );
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [query, apiReady]);
+
+  useEffect(() => {
+    const hide = (e) => { if (containerRef.current && !containerRef.current.contains(e.target)) setShowDropdown(false); };
+    document.addEventListener("mousedown", hide);
+    return () => document.removeEventListener("mousedown", hide);
+  }, []);
+
+  const handleSelect = (pred) => {
+    setQuery(pred.description); setSuggestions([]); setShowDropdown(false); setActiveIdx(-1);
+    if (onChange) onChange(pred.description);
+    if (!psRef.current) return;
+    psRef.current.getDetails(
+      { placeId: pred.place_id, fields: ["address_components", "formatted_address", "place_id"], sessionToken: sessionRef.current },
+      (place) => {
+        sessionRef.current = null;
+        const get = (types) => { const c = (place?.address_components || []).find(c => types.some(t => c.types.includes(t))); return c ? c.long_name : ""; };
+        const sn = get(["street_number"]), rt = get(["route"]);
+        if (onAddressSelect) onAddressSelect({
+          fullAddress: place?.formatted_address || pred.description,
+          placeId: place?.place_id || pred.place_id,
+          street: [sn, rt].filter(Boolean).join(" "),
+          city: get(["locality", "postal_town", "administrative_area_level_2"]),
+          state: get(["administrative_area_level_1"]),
+          zipCode: get(["postal_code"]),
+          country: get(["country"]),
+        });
+      }
+    );
+  };
+
+  const highlight = (pred) => {
+    const sf = pred.structured_formatting;
+    const main = sf?.main_text || ""; const sec = sf?.secondary_text || "";
+    const matches = sf?.main_text_matched_substrings || [];
+    let last = 0; const parts = [];
+    matches.forEach(({ offset, length }) => {
+      if (offset > last) parts.push(<span key={`n${last}`}>{main.slice(last, offset)}</span>);
+      parts.push(<span key={`m${offset}`} style={{ fontWeight:700, color:C.teal }}>{main.slice(offset, offset + length)}</span>);
+      last = offset + length;
+    });
+    if (last < main.length) parts.push(<span key={`e${last}`}>{main.slice(last)}</span>);
+    return { mainParts: parts.length ? parts : [main], sec };
+  };
+
+  const inputBase = {
+    width:"100%", boxSizing:"border-box", height:52,
+    paddingLeft:40, paddingRight: isLoading ? 44 : 16,
+    borderRadius:12, border:`1.5px solid ${focused ? C.focus : C.border}`,
+    fontSize:16, fontFamily:T.font, color:C.text, background:C.bg,
+    outline:"none", transition:"border .2s", WebkitAppearance:"none",
+  };
+
+  const pinIcon = (
+    <span style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", fontSize:16, pointerEvents:"none", zIndex:1 }}>📍</span>
+  );
+
+  if (apiError) {
+    return (
+      <div style={{ position:"relative" }}>
+        {pinIcon}
+        <input value={query} className="gp-input"
+          onChange={e => { setQuery(e.target.value); if (onChange) onChange(e.target.value); }}
+          onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+          placeholder="e.g., 123 Main St, New York, NY" style={inputBase} autoComplete="off" />
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} style={{ position:"relative", width:"100%" }}>
+      <div style={{ position:"relative" }}>
+        {pinIcon}
+        <input className="gp-input" value={query}
+          onChange={e => { setQuery(e.target.value); if (onChange) onChange(e.target.value); setActiveIdx(-1); }}
+          onFocus={() => { setFocused(true); if (query.length >= 2 && suggestions.length > 0) setShowDropdown(true); }}
+          onBlur={() => { setFocused(false); setTimeout(() => setShowDropdown(false), 150); }}
+          onKeyDown={e => {
+            if (!showDropdown || !suggestions.length) return;
+            if (e.key === "ArrowDown") { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, suggestions.length - 1)); }
+            else if (e.key === "ArrowUp") { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, 0)); }
+            else if (e.key === "Enter" && activeIdx >= 0) { e.preventDefault(); handleSelect(suggestions[activeIdx]); }
+            else if (e.key === "Escape") setShowDropdown(false);
+          }}
+          placeholder="e.g., 123 Main St, New York, NY" style={inputBase} autoComplete="off" />
+        {isLoading && (
+          <div style={{ position:"absolute", right:14, top:"50%", transform:"translateY(-50%)", width:18, height:18, border:`2px solid ${C.border}`, borderTopColor:C.teal, borderRadius:"50%", animation:"spin .7s linear infinite", pointerEvents:"none" }} />
+        )}
+      </div>
+      {showDropdown && (
+        <div style={{ position:"absolute", top:"calc(100% + 6px)", left:0, right:0, background:C.bg, borderRadius:12, boxShadow:"0 4px 20px rgba(0,0,0,0.12)", zIndex:1000, overflow:"hidden", animation:"fadeInDropdown .15s ease-out" }}>
+          {suggestions.length === 0 ? (
+            <div style={{ padding:16, fontSize:14, color:C.gray, textAlign:"center", fontFamily:T.font }}>No addresses found</div>
+          ) : suggestions.map((pred, i) => {
+            const { mainParts, sec } = highlight(pred);
+            const active = i === activeIdx;
+            return (
+              <div key={pred.place_id}
+                onMouseDown={e => { e.preventDefault(); handleSelect(pred); }}
+                onTouchEnd={e => { e.preventDefault(); handleSelect(pred); }}
+                onMouseEnter={() => setActiveIdx(i)}
+                style={{ padding:"12px 16px", minHeight:48, cursor:"pointer", background:active ? C.hover : C.bg, borderBottom:i < suggestions.length - 1 ? "1px solid #F3F4F6" : "none", display:"flex", flexDirection:"column", justifyContent:"center", transition:"background .1s", touchAction:"manipulation" }}>
+                <div style={{ fontSize:15, fontWeight:600, color:C.text, lineHeight:1.3, fontFamily:T.font }}>{mainParts}</div>
+                {sec && <div style={{ fontSize:13, color:C.gray, fontWeight:400, marginTop:2, lineHeight:1.3, fontFamily:T.font }}>{sec}</div>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════════════════════════════════════════
@@ -140,6 +320,13 @@ export default function AbodioPrototype() {
   const [homeType, setHomeType] = useState(null);
   const [homeName, setHomeName] = useState("");
   const [homeYear, setHomeYear] = useState("");
+  const emptyAddr = { fullAddress:"", placeId:"", street:"", city:"", state:"", zipCode:"", country:"" };
+  const [homeAddressData, setHomeAddressData] = useState(emptyAddr);
+  const [videoState, setVideoState]     = useState("idle"); // idle | processing | done
+  const [videoFileName, setVideoFileName] = useState("");
+  const [videoProcStep, setVideoProcStep] = useState(0);
+  const videoFileRef = useRef(null);
+  const videoTimersRef = useRef([]);
   const [challenge, setChallenge] = useState(null);
   const [magicPhase, setMagicPhase] = useState(0);
   const [checks, setChecks] = useState({});
@@ -172,6 +359,19 @@ export default function AbodioPrototype() {
   }, [screen]);
 
   useEffect(() => {
+    if (videoState !== "processing") return;
+    setVideoProcStep(0);
+    const ts = [
+      setTimeout(() => setVideoProcStep(1), 500),
+      setTimeout(() => setVideoProcStep(2), 1400),
+      setTimeout(() => setVideoProcStep(3), 2400),
+      setTimeout(() => setVideoState("done"), 3600),
+    ];
+    videoTimersRef.current = ts;
+    return () => ts.forEach(clearTimeout);
+  }, [videoState]);
+
+  useEffect(() => {
     const done = Object.values(checks).filter(Boolean).length;
     if (done >= 2 && !premiumSeen) setTimeout(() => setShowPremium(true), 800);
   }, [checks, premiumSeen]);
@@ -189,6 +389,11 @@ export default function AbodioPrototype() {
     if (["splash", "welcome", "goal", "home-type"].includes(screen)) {
       setHomeName("");
       setHomeYear("");
+      setHomeAddressData(emptyAddr);
+      videoTimersRef.current.forEach(clearTimeout);
+      setVideoState("idle");
+      setVideoFileName("");
+      setVideoProcStep(0);
     }
   }, [screen]);
 
@@ -338,17 +543,143 @@ export default function AbodioPrototype() {
         <input value={homeName} onChange={e => setHomeName(e.target.value)} placeholder="e.g., Maple Street House" style={{ ...inputStyle, marginBottom:20 }}
           onFocus={e => e.target.style.borderColor=T.sage} onBlur={e => e.target.style.borderColor=T.border} />
       </Fade>
-      <Fade delay={300}>
+      <Fade delay={270}>
+        <label style={{ fontSize:13, fontWeight:600, color:T.text, marginBottom:8, display:"block" }}>
+          Home address <span style={{ fontWeight:400, color:T.textMuted }}>(optional)</span>
+        </label>
+        <div style={{ marginBottom:20 }}>
+          <GooglePlacesInput
+            onChange={(text) => setHomeAddressData(d => ({ ...d, fullAddress: text }))}
+            onAddressSelect={(data) => setHomeAddressData(data)}
+          />
+        </div>
+      </Fade>
+      <Fade delay={340}>
         <label style={{ fontSize:13, fontWeight:600, color:T.text, marginBottom:8, display:"block" }}>Year built <span style={{ fontWeight:400, color:T.textMuted }}>(approximate)</span></label>
         <input value={homeYear} onChange={e => setHomeYear(e.target.value.replace(/\D/g,"").slice(0,4))} placeholder="e.g., 1998" inputMode="numeric" style={{ ...inputStyle, marginBottom:28 }}
           onFocus={e => e.target.style.borderColor=T.sage} onBlur={e => e.target.style.borderColor=T.border} />
       </Fade>
-      <Fade delay={400}>
-        <button onClick={() => { addBrevo("details_completed"); setSimState(s => ({...s, bubble:{...s.bubble, home_type:homeType, year:homeYear, name:homeName}})); go("challenge"); }} style={primaryBtn}>Continue <I.Arrow c="#fff" /></button>
+      <Fade delay={410}>
+        <button onClick={() => { addBrevo("details_completed"); setSimState(s => ({...s, bubble:{...s.bubble, home_type:homeType, year:homeYear, name:homeName, address:homeAddressData.fullAddress, city:homeAddressData.city, country:homeAddressData.country}})); go(goal === "get-organized" ? "video-upload" : "challenge"); }} style={primaryBtn}>Continue <I.Arrow c="#fff" /></button>
         <button onClick={() => go("challenge")} style={{ width:"100%", padding:"14px", background:"none", border:"none", cursor:"pointer", fontFamily:T.font, fontSize:14, color:T.textMuted, marginTop:6 }}>Skip for now</button>
       </Fade>
     </div>
   );
+
+  const VideoUploadScreen = () => {
+    const handleFile = (file) => {
+      if (!file || !file.type.startsWith("video/")) return;
+      setVideoFileName(file.name);
+      setVideoState("processing");
+    };
+
+    const procSteps = [
+      "Video received",
+      "Scanning rooms & spaces…",
+      "Identifying appliances…",
+      "Building your home profile…",
+    ];
+
+    const previewSpaces  = persona?.spaces?.slice(0, 3)  || ["Kitchen", "Living Room", "Bedroom"];
+    const previewAssets  = persona?.assets?.slice(0, 3)  || ["Refrigerator", "Dishwasher", "Furnace"];
+    const previewItems   = [...previewSpaces, ...previewAssets].slice(0, 5);
+
+    return (
+      <div style={{ padding:"20px 24px" }}>
+        <Fade>
+          <p style={{ fontSize:12, fontWeight:700, color:T.sage, textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Just for you</p>
+        </Fade>
+        <Fade delay={80}>
+          <h2 style={{ fontFamily:T.fontDisplay, fontSize:26, fontWeight:600, lineHeight:1.2, color:T.charcoal, marginBottom:6 }}>Show us your space</h2>
+        </Fade>
+        <Fade delay={150}>
+          <p style={{ fontSize:15, color:T.textSoft, lineHeight:1.5, marginBottom:28 }}>
+            Upload a quick home tour and Bodie will organize your rooms, appliances, and documents automatically.
+          </p>
+        </Fade>
+
+        {videoState === "idle" && (
+          <Fade delay={200}>
+            <input ref={videoFileRef} type="file" accept="video/*" style={{ display:"none" }}
+              onChange={e => handleFile(e.target.files?.[0])} />
+            <div
+              onClick={() => videoFileRef.current?.click()}
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => { e.preventDefault(); handleFile(e.dataTransfer.files?.[0]); }}
+              onMouseOver={e => { e.currentTarget.style.borderColor=T.sage; e.currentTarget.style.background="#E0F0F0"; }}
+              onMouseOut={e => { e.currentTarget.style.borderColor=T.sageSoft; e.currentTarget.style.background=T.sageGhost; }}
+              style={{ border:`2px dashed ${T.sageSoft}`, borderRadius:T.r20, padding:"44px 24px", textAlign:"center", cursor:"pointer", background:T.sageGhost, transition:"all .2s", marginBottom:12 }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>🎥</div>
+              <div style={{ fontSize:15, fontWeight:600, color:T.text, marginBottom:4 }}>Tap to upload a video</div>
+              <div style={{ fontSize:13, color:T.textMuted }}>or drag & drop · MP4, MOV, AVI</div>
+            </div>
+
+            <input id="vid-camera" type="file" accept="video/*" capture="environment" style={{ display:"none" }}
+              onChange={e => handleFile(e.target.files?.[0])} />
+            <label htmlFor="vid-camera" style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, width:"100%", padding:"15px", borderRadius:T.r16, border:`1.5px solid ${T.border}`, background:T.warmWhite, cursor:"pointer", fontFamily:T.font, fontSize:14, fontWeight:500, color:T.textSoft, marginBottom:20, boxSizing:"border-box" }}>
+              📷 Record a video instead
+            </label>
+          </Fade>
+        )}
+
+        {videoState === "processing" && (
+          <Fade delay={0}>
+            <div style={{ background:T.warmWhite, borderRadius:T.r20, padding:24, border:`1.5px solid ${T.sageSoft}`, marginBottom:20 }}>
+              <div style={{ fontSize:13, color:T.textMuted, marginBottom:18, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                📹 {videoFileName}
+              </div>
+              {procSteps.map((label, i) => {
+                const done = videoProcStep > i, active = videoProcStep === i, pending = videoProcStep < i;
+                return (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14, opacity:pending?.3:1, transition:"all .5s" }}>
+                    <div style={{ width:30, height:30, borderRadius:10, flexShrink:0, background:done?T.sage:active?T.sageSoft:T.borderSoft, display:"flex", alignItems:"center", justifyContent:"center", transition:"all .4s" }}>
+                      {done ? <I.Check s={14} c="#fff" /> : active ? <div style={{ width:14, height:14, border:`2px solid ${T.sage}`, borderTopColor:"transparent", borderRadius:"50%", animation:"spin .7s linear infinite" }} /> : <div style={{ width:6, height:6, borderRadius:3, background:T.textMuted, opacity:.4 }} />}
+                    </div>
+                    <span style={{ fontSize:14, fontWeight:pending?400:600, color:pending?T.textMuted:T.text }}>{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </Fade>
+        )}
+
+        {videoState === "done" && (
+          <Fade delay={0}>
+            <div style={{ background:`linear-gradient(135deg, ${T.sageGhost}, #E6F5F5)`, borderRadius:T.r20, padding:22, border:`1.5px solid ${T.sageSoft}`, marginBottom:20 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
+                <div style={{ width:44, height:44, borderRadius:14, background:`linear-gradient(135deg, ${T.sage}, ${T.sageDark})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <I.Sparkle s={22} c="#fff" />
+                </div>
+                <div>
+                  <div style={{ fontSize:16, fontWeight:700, color:T.charcoal }}>Everything's organized!</div>
+                  <div style={{ fontSize:13, color:T.textSoft, marginTop:2 }}>Bodie set up your home profile</div>
+                </div>
+              </div>
+              <p style={{ fontSize:14, color:T.textSoft, lineHeight:1.65, marginBottom:14 }}>
+                We identified <strong style={{ color:T.text }}>{previewSpaces.length} rooms</strong> and <strong style={{ color:T.text }}>{previewAssets.length} appliances</strong>. Your complete home profile is ready to explore.
+              </p>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                {previewItems.map((item, i) => (
+                  <span key={i} style={{ padding:"5px 12px", borderRadius:T.rFull, fontSize:12, fontWeight:600, background:"rgba(26,123,126,0.1)", color:T.sage, border:`1px solid ${T.sageSoft}` }}>✓ {item}</span>
+                ))}
+              </div>
+            </div>
+            <button onClick={() => { addBrevo("video_uploaded"); addMilestone("video_tour"); go("challenge"); }} style={primaryBtn}>
+              See my plan <I.Arrow c="#fff" />
+            </button>
+          </Fade>
+        )}
+
+        {videoState === "idle" && (
+          <Fade delay={360}>
+            <button onClick={() => go("challenge")} style={{ width:"100%", padding:"14px", background:"none", border:"none", cursor:"pointer", fontFamily:T.font, fontSize:14, color:T.textMuted }}>
+              Skip for now
+            </button>
+          </Fade>
+        )}
+      </div>
+    );
+  };
 
   const challenges = [
     { id:"scattered", icon:"📂", label:"Everything is scattered", sub:"Manuals, receipts, contacts in 10 places" },
@@ -577,7 +908,7 @@ export default function AbodioPrototype() {
           <details style={{ marginBottom:24 }}>
             <summary style={{ fontSize:11, color:T.textMuted, cursor:"pointer", padding:"8px 0", fontFamily:"monospace" }}>🔧 Simulated State (reviewers)</summary>
             <pre style={{ background:"#0f1410", color:"#8ec99e", padding:14, borderRadius:T.r12, fontSize:10, lineHeight:1.7, overflowX:"auto", marginTop:8 }}>
-{JSON.stringify({ bubble: simState.bubble, brevo_tags: simState.brevo, milestones: simState.milestones, profile: { goal, homeType, homeYear, homeName, challenge } }, null, 2)}
+{JSON.stringify({ bubble: simState.bubble, brevo_tags: simState.brevo, milestones: simState.milestones, profile: { goal, homeType, homeYear, homeName, challenge, address: homeAddressData } }, null, 2)}
             </pre>
           </details>
         </Fade>
@@ -640,12 +971,14 @@ export default function AbodioPrototype() {
   // ═══════════════════════════════════════════════════════════════════════════
   // LAYOUT
   // ═══════════════════════════════════════════════════════════════════════════
-  const screens = { splash: Splash, welcome: Welcome, goal: GoalScreen, "home-type": HomeTypeScreen, "home-details": HomeDetailsScreen, challenge: ChallengeScreen, "bodie-magic": BodieMagic, signup: SignupScreen, dashboard: Dashboard };
+  const screens = { splash: Splash, welcome: Welcome, goal: GoalScreen, "home-type": HomeTypeScreen, "home-details": HomeDetailsScreen, "video-upload": VideoUploadScreen, challenge: ChallengeScreen, "bodie-magic": BodieMagic, signup: SignupScreen, dashboard: Dashboard };
   const Screen = screens[screen] || Welcome;
   const showNav = !["splash","welcome"].includes(screen);
   const showSteps = ["goal","home-type","home-details","challenge"].includes(screen);
   const stepIdx = ["goal","home-type","home-details","challenge"].indexOf(screen);
-  const flowOrder = ["splash","welcome","goal","home-type","home-details","challenge","bodie-magic","signup","dashboard"];
+  const flowOrder = goal === "get-organized"
+    ? ["splash","welcome","goal","home-type","home-details","video-upload","challenge","bodie-magic","signup","dashboard"]
+    : ["splash","welcome","goal","home-type","home-details","challenge","bodie-magic","signup","dashboard"];
 
   const globalStyles = (
     <>
@@ -655,8 +988,10 @@ export default function AbodioPrototype() {
         @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
         @keyframes pulse { 0%{box-shadow:0 6px 24px ${T.sage}44, 0 0 0 0 ${T.sage}33} 70%{box-shadow:0 6px 24px ${T.sage}44, 0 0 0 12px ${T.sage}00} 100%{box-shadow:0 6px 24px ${T.sage}44, 0 0 0 0 ${T.sage}00} }
         @keyframes loadBar { from{width:0%} to{width:100%} }
+        @keyframes fadeInDropdown { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
         * { margin:0; padding:0; box-sizing:border-box; }
         input::placeholder { color:${T.textMuted}; }
+        .gp-input::placeholder { color:#8E9A93; }
         ::-webkit-scrollbar { width:0; height:0; }
       `}</style>
     </>
