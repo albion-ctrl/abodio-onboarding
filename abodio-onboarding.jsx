@@ -150,6 +150,7 @@ export default function AbodioPrototype() {
   const [premiumSeen, setPremiumSeen] = useState(false);
   const scrollRef = useRef(null);
   const chatRef = useRef(null);
+  const [isDesktop, setIsDesktop] = useState(typeof window !== "undefined" && window.innerWidth >= 768);
 
   const persona = goal ? PERSONAS[goal] : null;
   const homeLabel = HOME_TYPES.find(h => h.id === homeType)?.label || "home";
@@ -175,6 +176,12 @@ export default function AbodioPrototype() {
   }, [checks, premiumSeen]);
 
   useEffect(() => { chatRef.current?.scrollTo?.({ top: chatRef.current.scrollHeight, behavior: "smooth" }); }, [bodieMessages, bodieTyping]);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const completedCount = Object.values(checks).filter(Boolean).length;
   const totalChecks = persona?.checklist?.length || 4;
@@ -577,8 +584,8 @@ export default function AbodioPrototype() {
       )}
 
       {showBodie && (
-        <div onClick={e => { if(e.target===e.currentTarget) setShowBodie(false); }} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:30, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
-          <div style={{ background:T.cream, borderRadius:"20px 20px 0 0", maxHeight:"72vh", display:"flex", flexDirection:"column", boxShadow:"0 -4px 32px rgba(0,0,0,0.15)" }}>
+        <div onClick={e => { if(e.target===e.currentTarget) setShowBodie(false); }} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:30, display:"flex", ...(isDesktop ? { alignItems:"center", justifyContent:"center" } : { flexDirection:"column", justifyContent:"flex-end" }) }}>
+          <div style={{ background:T.cream, ...(isDesktop ? { borderRadius:24, width:"100%", maxWidth:480, maxHeight:"80vh", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" } : { borderRadius:"20px 20px 0 0", maxHeight:"72vh", boxShadow:"0 -4px 32px rgba(0,0,0,0.15)" }), display:"flex", flexDirection:"column" }}>
             <div style={{ padding:"14px 20px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                 <div style={{ width:36, height:36, borderRadius:11, background:`linear-gradient(135deg, ${T.sage}, ${T.sageDark})`, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff" }}><I.Sparkle s={18} c="#fff" /></div>
@@ -586,7 +593,7 @@ export default function AbodioPrototype() {
               </div>
               <button onClick={() => setShowBodie(false)} style={{ background:"none", border:"none", fontSize:22, color:T.textMuted, cursor:"pointer", padding:4 }}>×</button>
             </div>
-            <div ref={chatRef} style={{ flex:1, overflowY:"auto", padding:"16px 20px", minHeight:180, maxHeight:"48vh" }}>
+            <div ref={chatRef} style={{ flex:1, overflowY:"auto", padding:"16px 20px", minHeight:180, maxHeight: isDesktop ? "55vh" : "48vh" }}>
               {bodieMessages.length === 0 && (
                 <>
                   <div style={{ background:T.sageGhost, padding:"12px 16px", borderRadius:"4px 16px 16px 16px", maxWidth:"88%", marginBottom:14, fontSize:14, lineHeight:1.55, color:T.text }}>
@@ -631,8 +638,8 @@ export default function AbodioPrototype() {
   const stepIdx = ["goal","home-type","home-details","challenge"].indexOf(screen);
   const flowOrder = ["splash","welcome","goal","home-type","home-details","challenge","bodie-magic","signup","dashboard"];
 
-  return (
-    <div style={{ width:"100%", minHeight:"100vh", background:"#D8D4CE", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:T.font, WebkitFontSmoothing:"antialiased" }}>
+  const globalStyles = (
+    <>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
       <style>{`
         @keyframes spin { to { transform:rotate(360deg) } }
@@ -643,13 +650,87 @@ export default function AbodioPrototype() {
         input::placeholder { color:${T.textMuted}; }
         ::-webkit-scrollbar { width:0; height:0; }
       `}</style>
+    </>
+  );
 
+  // ── DESKTOP SIDEBAR ──────────────────────────────────────────────────────
+  const DesktopSidebar = () => (
+    <div style={{ width:420, flexShrink:0, background:`linear-gradient(180deg, ${T.sageDeep} 0%, ${T.sageDark} 100%)`, display:"flex", flexDirection:"column", justifyContent:"space-between", padding:"52px 48px", position:"sticky", top:0, height:"100vh", overflow:"hidden" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        <div style={{ width:40, height:40, borderRadius:12, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <I.Home s={22} c="#fff" f="rgba(255,255,255,0.2)" />
+        </div>
+        <span style={{ fontFamily:T.fontDisplay, fontSize:22, fontWeight:600, color:"#fff", letterSpacing:"-0.3px" }}>abodio</span>
+      </div>
+      <div>
+        <h1 style={{ fontFamily:T.fontDisplay, fontSize:40, fontWeight:600, lineHeight:1.12, color:"#fff", letterSpacing:"-1px", marginBottom:20 }}>Your home,<br/>finally under<br/>control.</h1>
+        <p style={{ fontSize:16, lineHeight:1.65, color:"rgba(255,255,255,0.68)", marginBottom:44 }}>Track every system. Never miss maintenance. Let AI do the heavy lifting.</p>
+        {[
+          { icon:"📋", title:"Organize Everything", desc:"Spaces, assets & manuals in one place" },
+          { icon:"🔧", title:"Stay on Schedule", desc:"AI-built maintenance plans for your home" },
+          { icon:"✨", title:"Bodie AI Assistant", desc:"Your 24/7 intelligent home companion" },
+        ].map((f, i) => (
+          <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:14, marginBottom:22 }}>
+            <div style={{ width:42, height:42, borderRadius:13, background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:19, flexShrink:0 }}>{f.icon}</div>
+            <div style={{ paddingTop:2 }}>
+              <div style={{ fontSize:15, fontWeight:600, color:"#fff", marginBottom:3 }}>{f.title}</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.58)", lineHeight:1.4 }}>{f.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div>
+        <div style={{ display:"flex", gap:3, marginBottom:8 }}>{[1,2,3,4,5].map(i => <I.Star key={i} />)}</div>
+        <p style={{ fontSize:14, color:"rgba(255,255,255,0.6)" }}>4.9 · Trusted by 1,000+ homeowners</p>
+      </div>
+    </div>
+  );
+
+  // ── DESKTOP LAYOUT ───────────────────────────────────────────────────────
+  if (isDesktop) {
+    return (
+      <div style={{ width:"100%", minHeight:"100vh", display:"flex", fontFamily:T.font, WebkitFontSmoothing:"antialiased" }}>
+        {globalStyles}
+        <DesktopSidebar />
+        <div style={{ flex:1, background:T.cream, display:"flex", flexDirection:"column", minHeight:"100vh" }}>
+          {showNav && (
+            <div style={{ padding:"16px 48px", display:"flex", alignItems:"center", justifyContent:"space-between", borderBottom:`1px solid ${T.border}`, background:T.cream, position:"sticky", top:0, zIndex:10 }}>
+              {screen !== "dashboard" ? (
+                <button onClick={() => { const i = flowOrder.indexOf(screen); if(i>0) go(flowOrder[i-1]); }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontFamily:T.font, fontSize:14, fontWeight:600, color:T.sage }}>
+                  <I.Back s={18} c={T.sage} /> Back
+                </button>
+              ) : <div />}
+              <div style={{ fontSize:17, fontWeight:700, color:T.sage, letterSpacing:"-0.3px", display:"flex", alignItems:"center", gap:5 }}>
+                <I.Home s={18} c={T.sage} f={T.sage} /> abodio
+              </div>
+              {screen === "dashboard" ? (
+                <div style={{ width:36, height:36, borderRadius:11, background:T.sageGhost, border:`1px solid ${T.sageSoft}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:T.sage }}>{(homeName||"H")[0]}</div>
+              ) : <div />}
+            </div>
+          )}
+          {showSteps && (
+            <div style={{ padding:"16px 48px 0", maxWidth:680, width:"100%" }}>
+              <Steps current={stepIdx} />
+            </div>
+          )}
+          <div ref={scrollRef} style={{ flex:1, overflowY:"auto", maxWidth:680, width:"100%", padding:"0 48px 48px" }}>
+            <Screen />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── MOBILE LAYOUT ────────────────────────────────────────────────────────
+  return (
+    <div style={{ width:"100%", minHeight:"100vh", background:"#D8D4CE", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:T.font, WebkitFontSmoothing:"antialiased" }}>
+      {globalStyles}
       <div style={{
         width:"100%", maxWidth:400, height:"100dvh", maxHeight:870,
         background:T.cream, position:"relative", overflow:"hidden",
         display:"flex", flexDirection:"column",
         boxShadow:"0 0 0 1px rgba(0,0,0,0.06), 0 20px 60px rgba(0,0,0,0.15)",
-        borderRadius: typeof window !== "undefined" && window.innerWidth > 420 ? 32 : 0,
+        borderRadius: window.innerWidth > 420 ? 32 : 0,
       }}>
         {screen !== "splash" && (
           <div style={{ padding:"8px 20px 0", display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:12, fontWeight:600, color:T.text, flexShrink:0 }}>
