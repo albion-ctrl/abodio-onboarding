@@ -7,28 +7,29 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
 const T = {
-  sage:       "#4A8B6E",
-  sageDark:   "#2D6B4E",
-  sageDeep:   "#1B4332",
-  sageSoft:   "#D4E8DC",
-  sageGhost:  "#EFF7F2",
-  cream:      "#FAFAF7",
+  sage:       "#1A7B7E",
+  sageDark:   "#136062",
+  sageDeep:   "#0D4547",
+  sageSoft:   "#C2E0E1",
+  sageGhost:  "#EBF5F5",
+  cream:      "#F7F5F0",
   warmWhite:  "#FFFFFF",
-  charcoal:   "#1A1F1C",
-  text:       "#2C3530",
-  textSoft:   "#5D6B63",
-  textMuted:  "#8E9A93",
-  border:     "#E2E8E5",
-  borderSoft: "#EEF1EF",
-  gold:       "#C69C3F",
-  goldSoft:   "#FDF6E3",
+  charcoal:   "#1A1A1A",
+  text:       "#1A1A1A",
+  textSoft:   "#4A4A4A",
+  textMuted:  "#767676",
+  border:     "#E2E0DB",
+  borderSoft: "#EDEAE4",
+  gold:       "#D4A853",
+  goldSoft:   "#FDF7E6",
   coral:      "#D9654B",
   coralSoft:  "#FEF0EC",
+  accent:     "#E8913A",
   font: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
   fontDisplay: "'Fraunces', 'Georgia', serif",
   r12: 12, r16: 16, r20: 20, rFull: 999,
-  shadow2: "0 4px 12px rgba(26,31,28,0.07), 0 1px 3px rgba(26,31,28,0.05)",
-  shadowGlow: "0 0 0 4px rgba(74,139,110,0.12)",
+  shadow2: "0 4px 12px rgba(26,26,26,0.07), 0 1px 3px rgba(26,26,26,0.05)",
+  shadowGlow: "0 0 0 4px rgba(26,123,126,0.12)",
 };
 
 // ─── PERSONAS ───────────────────────────────────────────────────────────────
@@ -125,7 +126,7 @@ const I = {
   Check: (p) => <svg width={p?.s||16} height={p?.s||16} viewBox="0 0 24 24" fill="none" stroke={p?.c||"currentColor"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
   Sparkle: (p) => <svg width={p?.s||20} height={p?.s||20} viewBox="0 0 24 24" fill="none" stroke={p?.c||"currentColor"} strokeWidth="1.8"><path d="M12 2L14.2 8.6 21 10 14.2 12.8 12 22 9.8 12.8 3 10 9.8 8.6z" strokeLinejoin="round"/></svg>,
   Home: (p) => <svg width={p?.s||20} height={p?.s||20} viewBox="0 0 24 24" fill={p?.f||"none"} stroke={p?.c||"currentColor"} strokeWidth="1.8" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-  Star: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="#C69C3F" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  Star: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="#D4A853" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
   Send: (p) => <svg width={p?.s||18} height={p?.s||18} viewBox="0 0 24 24" fill="none" stroke={p?.c||"currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
   Crown: (p) => <svg width={p?.s||18} height={p?.s||18} viewBox="0 0 24 24" fill="none" stroke={p?.c||"currentColor"} strokeWidth="1.8" strokeLinejoin="round"><path d="M2 20h20l-2-12-5 5-3-7-3 7-5-5z"/><rect x="2" y="20" width="20" height="2" rx="1"/></svg>,
 };
@@ -230,7 +231,7 @@ export default function AbodioPrototype() {
 
   const Splash = () => (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", background:`linear-gradient(180deg, ${T.sageDeep} 0%, ${T.sageDark} 100%)`, padding: 32 }}>
-      <Fade delay={200}><div style={{ width:64, height:64, borderRadius:20, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20 }}><I.Home s={32} c="#fff" f="rgba(255,255,255,0.2)" /></div></Fade>
+      <Fade delay={200}><div style={{ width:64, height:64, borderRadius:20, background:"rgba(232,145,58,0.2)", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20 }}><I.Home s={32} c={T.accent} f={`${T.accent}55`} /></div></Fade>
       <Fade delay={500}><div style={{ fontFamily:T.fontDisplay, fontSize:28, fontWeight:600, color:"#fff", letterSpacing:"-0.5px" }}>abodio</div></Fade>
       <Fade delay={800}><div style={{ fontSize:14, color:"rgba(255,255,255,0.6)", marginTop:8 }}>Smart Home Management</div></Fade>
       <Fade delay={1200}><div style={{ width:32, height:3, borderRadius:2, background:"rgba(255,255,255,0.3)", marginTop:32, overflow:"hidden" }}><div style={{ width:"100%", height:"100%", borderRadius:2, background:"rgba(255,255,255,0.8)", animation:"loadBar 1.5s ease-in-out" }} /></div></Fade>
@@ -430,7 +431,7 @@ export default function AbodioPrototype() {
     <div style={{ padding:"28px 24px" }}>
       <Fade>
         <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div style={{ width:52, height:52, borderRadius:16, background:T.sageGhost, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 14px", border:`1px solid ${T.sageSoft}` }}><I.Home s={24} c={T.sage} /></div>
+          <div style={{ width:52, height:52, borderRadius:16, background:"#FEF4EB", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 14px", border:`1px solid ${T.accent}33` }}><I.Home s={24} c={T.accent} /></div>
           <h2 style={{ fontFamily:T.fontDisplay, fontSize:24, fontWeight:600, color:T.charcoal, marginBottom:4 }}>Save your home</h2>
           <p style={{ fontSize:15, color:T.textSoft }}>Free account · 30 seconds</p>
         </div>
@@ -657,8 +658,8 @@ export default function AbodioPrototype() {
   const DesktopSidebar = () => (
     <div style={{ width:420, flexShrink:0, background:`linear-gradient(180deg, ${T.sageDeep} 0%, ${T.sageDark} 100%)`, display:"flex", flexDirection:"column", justifyContent:"space-between", padding:"52px 48px", position:"sticky", top:0, height:"100vh", overflow:"hidden" }}>
       <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-        <div style={{ width:40, height:40, borderRadius:12, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <I.Home s={22} c="#fff" f="rgba(255,255,255,0.2)" />
+        <div style={{ width:40, height:40, borderRadius:12, background:"rgba(232,145,58,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <I.Home s={22} c={T.accent} f={`${T.accent}55`} />
         </div>
         <span style={{ fontFamily:T.fontDisplay, fontSize:22, fontWeight:600, color:"#fff", letterSpacing:"-0.3px" }}>abodio</span>
       </div>
@@ -701,7 +702,7 @@ export default function AbodioPrototype() {
                 </button>
               ) : <div />}
               <div style={{ fontSize:17, fontWeight:700, color:T.sage, letterSpacing:"-0.3px", display:"flex", alignItems:"center", gap:5 }}>
-                <I.Home s={18} c={T.sage} f={T.sage} /> abodio
+                <I.Home s={18} c={T.accent} f={T.accent} /> abodio
               </div>
               {screen === "dashboard" ? (
                 <div style={{ width:36, height:36, borderRadius:11, background:T.sageGhost, border:`1px solid ${T.sageSoft}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:T.sage }}>{(homeName||"H")[0]}</div>
@@ -714,7 +715,7 @@ export default function AbodioPrototype() {
             </div>
           )}
           <div ref={scrollRef} style={{ flex:1, overflowY:"auto", maxWidth:680, width:"100%", padding:"0 48px 48px" }}>
-            <Screen />
+            {Screen()}
           </div>
         </div>
       </div>
@@ -750,7 +751,7 @@ export default function AbodioPrototype() {
               </button>
             ) : <div style={{ width:60 }} />}
             <div style={{ fontSize:17, fontWeight:700, color:T.sage, letterSpacing:"-0.3px", display:"flex", alignItems:"center", gap:5 }}>
-              <I.Home s={18} c={T.sage} f={T.sage} /> abodio
+              <I.Home s={18} c={T.accent} f={T.accent} /> abodio
             </div>
             {screen === "dashboard" ? (
               <div style={{ width:34, height:34, borderRadius:11, background:T.sageGhost, border:`1px solid ${T.sageSoft}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:T.sage }}>{(homeName||"H")[0]}</div>
@@ -761,7 +762,7 @@ export default function AbodioPrototype() {
         {showSteps && <Steps current={stepIdx} />}
 
         <div ref={scrollRef} style={{ flex:1, overflowY:"auto", overflowX:"hidden", WebkitOverflowScrolling:"touch" }}>
-          <Screen />
+          {Screen()}
         </div>
 
         <div style={{ height:20, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
