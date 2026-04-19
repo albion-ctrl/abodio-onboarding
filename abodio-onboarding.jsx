@@ -7,11 +7,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
 const T = {
-  sage:       "#1A7B7E",
-  sageDark:   "#136062",
-  sageDeep:   "#0D4547",
-  sageSoft:   "#C2E0E1",
-  sageGhost:  "#EBF5F5",
+  sage:       "#388096",
+  sageDark:   "#2C6678",
+  sageDeep:   "#0F2D38",
+  sageSoft:   "#A7CDD5",
+  sageGhost:  "#D2F4F9",
   cream:      "#F7F5F0",
   warmWhite:  "#FFFFFF",
   charcoal:   "#1A1A1A",
@@ -29,7 +29,7 @@ const T = {
   fontDisplay: "'Fraunces', 'Georgia', serif",
   r12: 12, r16: 16, r20: 20, rFull: 999,
   shadow2: "0 4px 12px rgba(26,26,26,0.07), 0 1px 3px rgba(26,26,26,0.05)",
-  shadowGlow: "0 0 0 4px rgba(26,123,126,0.12)",
+  shadowGlow: "0 0 0 4px rgba(56,128,150,0.12)",
 };
 
 // ─── PERSONAS ───────────────────────────────────────────────────────────────
@@ -190,7 +190,7 @@ const GooglePlacesInput = ({ onChange, onAddressSelect }) => {
   const psRef         = useRef(null);
   const containerRef  = useRef(null);
 
-  const C = { border:"#E2E8E5", focus:"#1A7B7E", ph:"#8E9A93", text:"#1A1A1A", bg:"#FFFFFF", teal:"#1A7B7E", gray:"#6B7280", hover:"#E6F3F3" };
+  const C = { border:"#C5DCE3", focus:"#388096", ph:"#8E9A93", text:"#1A1A1A", bg:"#FFFFFF", teal:"#388096", gray:"#6B7280", hover:"#E4F3F7" };
 
   useEffect(() => {
     const key = import.meta.env.VITE_GOOGLE_MAPS_KEY;
@@ -715,7 +715,7 @@ export default function AbodioPrototype() {
               onClick={() => videoFileRef.current?.click()}
               onDragOver={e => e.preventDefault()}
               onDrop={e => { e.preventDefault(); handleFile(e.dataTransfer.files?.[0]); }}
-              onMouseOver={e => { e.currentTarget.style.borderColor=T.sage; e.currentTarget.style.background="#E0F0F0"; }}
+              onMouseOver={e => { e.currentTarget.style.borderColor=T.sage; e.currentTarget.style.background="#D5ECF2"; }}
               onMouseOut={e => { e.currentTarget.style.borderColor=T.sageSoft; e.currentTarget.style.background=T.sageGhost; }}
               style={{ border:`2px dashed ${T.sageSoft}`, borderRadius:T.r20, padding:"44px 24px", textAlign:"center", cursor:"pointer", background:T.sageGhost, transition:"all .2s", marginBottom:12 }}>
               <div style={{ fontSize:48, marginBottom:12 }}>🎥</div>
@@ -769,7 +769,7 @@ export default function AbodioPrototype() {
               </p>
               <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
                 {previewItems.map((item, i) => (
-                  <span key={i} style={{ padding:"5px 12px", borderRadius:T.rFull, fontSize:12, fontWeight:600, background:"rgba(26,123,126,0.1)", color:T.sage, border:`1px solid ${T.sageSoft}` }}>✓ {item}</span>
+                  <span key={i} style={{ padding:"5px 12px", borderRadius:T.rFull, fontSize:12, fontWeight:600, background:"rgba(56,128,150,0.1)", color:T.sage, border:`1px solid ${T.sageSoft}` }}>✓ {item}</span>
                 ))}
               </div>
             </div>
