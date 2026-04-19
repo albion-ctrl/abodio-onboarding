@@ -553,8 +553,7 @@ export default function AbodioPrototype() {
 
   const Splash = () => (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", background:`linear-gradient(180deg, ${T.sageDeep} 0%, ${T.sageDark} 100%)`, padding: 32 }}>
-      <Fade delay={200}><div style={{ width:64, height:64, borderRadius:20, background:"rgba(232,145,58,0.2)", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20 }}><I.Home s={32} c={T.accent} f={`${T.accent}55`} /></div></Fade>
-      <Fade delay={500}><div style={{ fontFamily:T.fontDisplay, fontSize:28, fontWeight:600, color:"#fff", letterSpacing:"-0.5px" }}>abodio</div></Fade>
+      <Fade delay={400}><img src="https://eab40cc435b9ef914dc08d4e17748808.cdn.bubble.io/f1743768597669x211028645903217360/Abodio+logo+without+icons+%281%29.png" alt="Abodio" style={{ height:44, width:"auto", filter:"brightness(0) invert(1)", marginBottom:4 }} /></Fade>
       <Fade delay={800}><div style={{ fontSize:14, color:"rgba(255,255,255,0.6)", marginTop:8 }}>Smart Home Management</div></Fade>
       <Fade delay={1200}><div style={{ width:32, height:3, borderRadius:2, background:"rgba(255,255,255,0.3)", marginTop:32, overflow:"hidden" }}><div style={{ width:"100%", height:"100%", borderRadius:2, background:"rgba(255,255,255,0.8)", animation:"loadBar 1.5s ease-in-out" }} /></div></Fade>
     </div>
@@ -1574,11 +1573,8 @@ export default function AbodioPrototype() {
   // ── DESKTOP SIDEBAR ──────────────────────────────────────────────────────
   const DesktopSidebar = () => (
     <div style={{ width:420, flexShrink:0, background:`linear-gradient(180deg, ${T.sageDeep} 0%, ${T.sageDark} 100%)`, display:"flex", flexDirection:"column", justifyContent:"space-between", padding:"52px 48px", position:"sticky", top:0, height:"100vh", overflow:"hidden" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-        <div style={{ width:40, height:40, borderRadius:12, background:"rgba(232,145,58,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <I.Home s={22} c={T.accent} f={`${T.accent}55`} />
-        </div>
-        <span style={{ fontFamily:T.fontDisplay, fontSize:22, fontWeight:600, color:"#fff", letterSpacing:"-0.3px" }}>abodio</span>
+      <div style={{ display:"flex", alignItems:"center" }}>
+        <img src="https://eab40cc435b9ef914dc08d4e17748808.cdn.bubble.io/f1743768597669x211028645903217360/Abodio+logo+without+icons+%281%29.png" alt="Abodio" style={{ height:32, width:"auto", filter:"brightness(0) invert(1)" }} />
       </div>
       <div>
         <h1 style={{ fontFamily:T.fontDisplay, fontSize:40, fontWeight:600, lineHeight:1.12, color:"#fff", letterSpacing:"-1px", marginBottom:20 }}>Your home,<br/>finally under<br/>control.</h1>
@@ -1618,8 +1614,8 @@ export default function AbodioPrototype() {
                   <I.Back s={18} c={T.sage} /> Back
                 </button>
               ) : <div />}
-              <div style={{ fontSize:17, fontWeight:700, color:T.sage, letterSpacing:"-0.3px", display:"flex", alignItems:"center", gap:5 }}>
-                <I.Home s={18} c={T.accent} f={T.accent} /> abodio
+              <div style={{ display:"flex", alignItems:"center" }}>
+                <img src="https://eab40cc435b9ef914dc08d4e17748808.cdn.bubble.io/f1743768597669x211028645903217360/Abodio+logo+without+icons+%281%29.png" alt="Abodio" style={{ height:24, width:"auto" }} />
               </div>
               {screen === "dashboard" ? (
                 <div style={{ width:36, height:36, borderRadius:11, background:T.sageGhost, border:`1px solid ${T.sageSoft}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:T.sage }}>{(homeName||"H")[0]}</div>
@@ -1667,8 +1663,8 @@ export default function AbodioPrototype() {
                 <I.Back s={18} c={T.sage} /> Back
               </button>
             ) : <div style={{ width:60 }} />}
-            <div style={{ fontSize:17, fontWeight:700, color:T.sage, letterSpacing:"-0.3px", display:"flex", alignItems:"center", gap:5 }}>
-              <I.Home s={18} c={T.accent} f={T.accent} /> abodio
+            <div style={{ display:"flex", alignItems:"center" }}>
+              <img src="https://eab40cc435b9ef914dc08d4e17748808.cdn.bubble.io/f1743768597669x211028645903217360/Abodio+logo+without+icons+%281%29.png" alt="Abodio" style={{ height:24, width:"auto" }} />
             </div>
             {screen === "dashboard" ? (
               <div style={{ width:34, height:34, borderRadius:11, background:T.sageGhost, border:`1px solid ${T.sageSoft}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:T.sage }}>{(homeName||"H")[0]}</div>
