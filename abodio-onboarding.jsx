@@ -103,6 +103,33 @@ const HOME_TYPES = [
   { id: "multi", label: "Multi-Family", icon: "🏗️", desc: "2+ units" },
 ];
 
+// ─── MAINTENANCE TASKS ──────────────────────────────────────────────────────
+const MAINTENANCE_TASKS = {
+  "HVAC System":      [{ period:"Monthly",        task:"Replace air filter",                       icon:"🔄", urgency:"high"   },
+                       { period:"Annually",        task:"Professional HVAC tune-up",               icon:"🔧", urgency:"medium" },
+                       { period:"Every 10-15 yrs", task:"Plan for HVAC replacement",               icon:"⚠️", urgency:"low"    }],
+  "Water Heater":     [{ period:"Every 6 months",  task:"Flush sediment from tank",                icon:"💧", urgency:"medium" },
+                       { period:"Annually",        task:"Test pressure relief valve",              icon:"🔍", urgency:"high"   },
+                       { period:"Every 8-12 yrs",  task:"Replace water heater",                   icon:"⚠️", urgency:"low"    }],
+  "Roof":             [{ period:"Annually",        task:"Inspect for damaged shingles",            icon:"🔍", urgency:"high"   },
+                       { period:"Every 20-30 yrs", task:"Plan for full roof replacement",          icon:"🏠", urgency:"low"    }],
+  "Gutters":          [{ period:"Spring & fall",   task:"Clean and inspect gutters",               icon:"🍂", urgency:"high"   }],
+  "Electrical Panel": [{ period:"Every 3-5 yrs",   task:"Professional electrical inspection",      icon:"⚡", urgency:"high"   },
+                       { period:"Annually",        task:"Test all GFCI outlets",                  icon:"🔌", urgency:"medium" }],
+  "Smoke Detectors":  [{ period:"Monthly",         task:"Test smoke detector batteries",           icon:"🔋", urgency:"high"   },
+                       { period:"Every 10 yrs",    task:"Replace smoke detectors",                icon:"🚨", urgency:"medium" }],
+  "Windows":          [{ period:"Every spring",    task:"Re-caulk window seals",                  icon:"🪟", urgency:"medium" }],
+  "Sump Pump":        [{ period:"Every 6 months",  task:"Test sump pump operation",               icon:"💧", urgency:"high"   },
+                       { period:"Every 7-10 yrs",  task:"Replace sump pump",                     icon:"⚠️", urgency:"low"    }],
+  "Plumbing":         [{ period:"Annually",        task:"Inspect pipes for leaks & corrosion",    icon:"🚿", urgency:"medium" }],
+  "Pool":             [{ period:"Weekly (season)", task:"Check water chemistry & clean filter",   icon:"🏊", urgency:"high"   },
+                       { period:"Annually",        task:"Professional pool inspection",            icon:"🔍", urgency:"medium" }],
+  "Fireplace":        [{ period:"Annually",        task:"Chimney sweep & inspection",             icon:"🔥", urgency:"high"   }],
+  "Solar Panels":     [{ period:"Every 6 months",  task:"Clean solar panels",                    icon:"☀️", urgency:"medium" }],
+  "Garage Door":      [{ period:"Every 6 months",  task:"Lubricate hinges, test safety reverse", icon:"🚪", urgency:"medium" }],
+  "Exterior/Siding":  [{ period:"Annually",        task:"Inspect siding for damage & rot",       icon:"🏠", urgency:"medium" }],
+};
+
 // ─── ANIMATION ──────────────────────────────────────────────────────────────
 const Fade = ({ children, delay = 0, y = 20, duration = 600, style = {} }) => {
   const [show, setShow] = useState(false);
@@ -330,6 +357,21 @@ export default function AbodioPrototype() {
   const [signupPassword, setSignupPassword] = useState("");
   const videoFileRef = useRef(null);
   const videoTimersRef = useRef([]);
+  // stay-maintained: asset input
+  const [selectedAssets, setSelectedAssets] = useState([]);
+  const [customAsset, setCustomAsset] = useState("");
+  // stay-maintained: ai insight CTA loading
+  const [insightPhase, setInsightPhase] = useState(0);
+  const [insightLoadStep, setInsightLoadStep] = useState(0);
+  // protect-value: doc upload
+  const [docUploadState, setDocUploadState] = useState("idle");
+  const [docUploadFileNames, setDocUploadFileNames] = useState([]);
+  const [docUploadProcStep, setDocUploadProcStep] = useState(0);
+  const docUploadFileRef = useRef(null);
+  const docUploadTimersRef = useRef([]);
+  // protect-value: value report CTA loading
+  const [valueReportPhase, setValueReportPhase] = useState(0);
+  const [valueReportLoadStep, setValueReportLoadStep] = useState(0);
   const [challenge, setChallenge] = useState(null);
   const [magicPhase, setMagicPhase] = useState(0);
   const [checks, setChecks] = useState({});
@@ -361,6 +403,24 @@ export default function AbodioPrototype() {
       setVideoState("idle");
       setVideoFileName("");
       setVideoProcStep(0);
+    }
+    if (screen === "asset-input") {
+      setSelectedAssets([]);
+      setCustomAsset("");
+    }
+    if (screen === "ai-insight-cta") {
+      setInsightPhase(0);
+      setInsightLoadStep(0);
+    }
+    if (screen === "doc-upload") {
+      docUploadTimersRef.current.forEach(clearTimeout);
+      setDocUploadState("idle");
+      setDocUploadFileNames([]);
+      setDocUploadProcStep(0);
+    }
+    if (screen === "value-report-cta") {
+      setValueReportPhase(0);
+      setValueReportLoadStep(0);
     }
     if (screen === "signup") {
       setSignupName("");
@@ -396,6 +456,41 @@ export default function AbodioPrototype() {
     videoTimersRef.current = ts;
     return () => ts.forEach(clearTimeout);
   }, [videoState]);
+
+  useEffect(() => {
+    if (docUploadState !== "processing") return;
+    setDocUploadProcStep(0);
+    const ts = [
+      setTimeout(() => setDocUploadProcStep(1), 500),
+      setTimeout(() => setDocUploadProcStep(2), 1400),
+      setTimeout(() => setDocUploadProcStep(3), 2400),
+      setTimeout(() => setDocUploadState("done"), 3600),
+    ];
+    docUploadTimersRef.current = ts;
+    return () => ts.forEach(clearTimeout);
+  }, [docUploadState]);
+
+  useEffect(() => {
+    if (screen !== "ai-insight-cta" || insightPhase !== 1) return;
+    setInsightLoadStep(0);
+    const ts = [
+      setTimeout(() => setInsightLoadStep(1), 800),
+      setTimeout(() => setInsightLoadStep(2), 1800),
+      setTimeout(() => { addBrevo("ai_insight_generated"); addMilestone("maintenance_plan_generated"); go("ai-maintenance-plan"); }, 3200),
+    ];
+    return () => ts.forEach(clearTimeout);
+  }, [screen, insightPhase, go]);
+
+  useEffect(() => {
+    if (screen !== "value-report-cta" || valueReportPhase !== 1) return;
+    setValueReportLoadStep(0);
+    const ts = [
+      setTimeout(() => setValueReportLoadStep(1), 800),
+      setTimeout(() => setValueReportLoadStep(2), 1800),
+      setTimeout(() => { addBrevo("value_report_generated"); addMilestone("value_report_created"); go("value-report"); }, 3200),
+    ];
+    return () => ts.forEach(clearTimeout);
+  }, [screen, valueReportPhase, go]);
 
   useEffect(() => {
     const done = Object.values(checks).filter(Boolean).length;
@@ -574,7 +669,7 @@ export default function AbodioPrototype() {
           onFocus={e => e.target.style.borderColor=T.sage} onBlur={e => e.target.style.borderColor=T.border} />
       </Fade>
       <Fade delay={410}>
-        <button onClick={() => { addBrevo("details_completed"); setSimState(s => ({...s, bubble:{...s.bubble, home_type:homeType, year:homeYear, name:homeName, address:homeAddressData.fullAddress, city:homeAddressData.city, country:homeAddressData.country}})); go(goal === "get-organized" ? "video-upload" : "challenge"); }} style={primaryBtn}>Continue <I.Arrow c="#fff" /></button>
+        <button onClick={() => { addBrevo("details_completed"); setSimState(s => ({...s, bubble:{...s.bubble, home_type:homeType, year:homeYear, name:homeName, address:homeAddressData.fullAddress, city:homeAddressData.city, country:homeAddressData.country}})); go(goal === "get-organized" || goal === "stay-maintained" ? "video-upload" : goal === "protect-value" ? "doc-upload" : "challenge"); }} style={primaryBtn}>Continue <I.Arrow c="#fff" /></button>
         <button onClick={() => go("challenge")} style={{ width:"100%", padding:"14px", background:"none", border:"none", cursor:"pointer", fontFamily:T.font, fontSize:14, color:T.textMuted, marginTop:6 }}>Skip for now</button>
       </Fade>
     </div>
@@ -678,8 +773,8 @@ export default function AbodioPrototype() {
                 ))}
               </div>
             </div>
-            <button onClick={() => { addBrevo("video_uploaded"); addMilestone("video_tour"); go("challenge"); }} style={primaryBtn}>
-              See my plan <I.Arrow c="#fff" />
+            <button onClick={() => { addBrevo("video_uploaded"); addMilestone("video_tour"); go(goal === "stay-maintained" ? "asset-input" : "challenge"); }} style={primaryBtn}>
+              {goal === "stay-maintained" ? "Continue" : "See my plan"} <I.Arrow c="#fff" />
             </button>
           </Fade>
         )}
@@ -776,6 +871,462 @@ export default function AbodioPrototype() {
           <p style={{ textAlign:"center", fontSize:12, color:T.textMuted, marginTop:10 }}>Everything Bodie built is saved to your account</p>
         </Fade>
       )}
+    </div>
+  );
+
+  // ── ASSET INPUT ─────────────────────────────────────────────────────────
+  const ASSET_OPTIONS = ["HVAC System","Water Heater","Roof","Gutters","Electrical Panel","Smoke Detectors","Windows","Sump Pump","Plumbing","Pool","Fireplace","Solar Panels","Garage Door","Exterior/Siding"];
+
+  const AssetInputScreen = () => {
+    const allAssets = [...ASSET_OPTIONS, ...selectedAssets.filter(a => !ASSET_OPTIONS.includes(a))];
+    const toggleAsset = (asset) => {
+      setSelectedAssets(prev => prev.includes(asset) ? prev.filter(a => a !== asset) : [...prev, asset]);
+    };
+    const addCustom = () => {
+      const val = customAsset.trim();
+      if (!val || selectedAssets.includes(val)) return;
+      setSelectedAssets(prev => [...prev, val]);
+      setCustomAsset("");
+    };
+    return (
+      <div style={{ padding:"20px 24px" }}>
+        <Fade><p style={{ fontSize:12, fontWeight:700, color:T.sage, textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Step 5 of 5</p></Fade>
+        <Fade delay={80}><h2 style={{ fontFamily:T.fontDisplay, fontSize:26, fontWeight:600, lineHeight:1.2, color:T.charcoal, marginBottom:6 }}>What systems does your home have?</h2></Fade>
+        <Fade delay={150}><p style={{ fontSize:15, color:T.textSoft, lineHeight:1.5, marginBottom:24 }}>Bodie will track and schedule maintenance for each one.</p></Fade>
+
+        <Fade delay={200}>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:20 }}>
+            {allAssets.map((asset, i) => {
+              const selected = selectedAssets.includes(asset);
+              return (
+                <button key={i} onClick={() => toggleAsset(asset)} style={{
+                  padding:"9px 16px", borderRadius:T.rFull, fontSize:13, fontWeight:600, fontFamily:T.font,
+                  border:`1.5px solid ${selected ? T.sage : T.border}`,
+                  background:selected ? T.sageGhost : T.warmWhite,
+                  color:selected ? T.sage : T.textSoft,
+                  cursor:"pointer", transition:"all .15s",
+                }}>
+                  {selected ? "✓ " : ""}{asset}
+                </button>
+              );
+            })}
+          </div>
+        </Fade>
+
+        <Fade delay={280}>
+          <label style={{ fontSize:13, fontWeight:600, color:T.text, marginBottom:8, display:"block" }}>Add a custom asset</label>
+          <div style={{ display:"flex", gap:8, marginBottom:20 }}>
+            <input value={customAsset} onChange={e => setCustomAsset(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && addCustom()}
+              placeholder="e.g., Irrigation System" style={{ ...inputStyle, flex:1 }}
+              onFocus={e => e.target.style.borderColor=T.sage} onBlur={e => e.target.style.borderColor=T.border} />
+            <button onClick={addCustom} style={{ padding:"0 20px", borderRadius:T.r12, border:`1.5px solid ${T.sage}`, background:T.warmWhite, color:T.sage, fontSize:14, fontWeight:600, fontFamily:T.font, cursor:"pointer", flexShrink:0 }}>Add</button>
+          </div>
+        </Fade>
+
+        {selectedAssets.length > 0 && (
+          <Fade delay={0}>
+            <div style={{ background:T.sageGhost, border:`1px solid ${T.sageSoft}`, borderRadius:T.r12, padding:"11px 16px", marginBottom:20, fontSize:13, fontWeight:600, color:T.sage }}>
+              {selectedAssets.length} asset{selectedAssets.length !== 1 ? "s" : ""} selected — Bodie will create tasks for each
+            </div>
+          </Fade>
+        )}
+
+        <Fade delay={340}>
+          <button onClick={() => { addBrevo("assets_selected"); go("ai-insight-cta"); }} style={{ ...primaryBtn, marginBottom:10 }}>
+            Continue <I.Arrow c="#fff" />
+          </button>
+          <button onClick={() => go("ai-insight-cta")} style={{ width:"100%", padding:"14px", background:"none", border:"none", cursor:"pointer", fontFamily:T.font, fontSize:14, color:T.textMuted }}>
+            Skip — I'll add these later
+          </button>
+        </Fade>
+      </div>
+    );
+  };
+
+  // ── AI INSIGHT CTA ───────────────────────────────────────────────────────
+  const AiInsightCtaScreen = () => {
+    const insightSteps = ["Analysing your home profile…","Reviewing your systems…","Generating your maintenance plan…"];
+    const homeSummary = [homeName || "My Home", homeLabel, homeYear ? `Built ${homeYear}` : ""].filter(Boolean).join(" · ");
+
+    if (insightPhase === 1) {
+      return (
+        <div style={{ padding:"20px 24px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:420 }}>
+          <Fade>
+            <div style={{ width:64, height:64, borderRadius:20, background:`linear-gradient(135deg, ${T.sage}, ${T.sageDark})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24 }}>
+              <div style={{ width:28, height:28, border:`3px solid rgba(255,255,255,0.4)`, borderTopColor:"#fff", borderRadius:"50%", animation:"spin .7s linear infinite" }} />
+            </div>
+          </Fade>
+          <Fade delay={100}><h2 style={{ fontFamily:T.fontDisplay, fontSize:24, fontWeight:600, color:T.charcoal, marginBottom:24, textAlign:"center" }}>Building your plan…</h2></Fade>
+          <div style={{ width:"100%", maxWidth:320 }}>
+            {insightSteps.map((label, i) => {
+              const done = insightLoadStep > i, active = insightLoadStep === i, pending = insightLoadStep < i;
+              return (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16, opacity:pending ? .3 : 1, transition:"all .5s" }}>
+                  <div style={{ width:30, height:30, borderRadius:10, flexShrink:0, background:done?T.sage:active?T.sageSoft:T.borderSoft, display:"flex", alignItems:"center", justifyContent:"center", transition:"all .4s" }}>
+                    {done ? <I.Check s={14} c="#fff" /> : active ? <div style={{ width:14, height:14, border:`2px solid ${T.sage}`, borderTopColor:"transparent", borderRadius:"50%", animation:"spin .7s linear infinite" }} /> : <div style={{ width:6, height:6, borderRadius:3, background:T.textMuted, opacity:.4 }} />}
+                  </div>
+                  <span style={{ fontSize:14, fontWeight:pending?400:600, color:pending?T.textMuted:T.text }}>{label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ padding:"20px 24px" }}>
+        <Fade>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:28 }}>
+            <div style={{ width:72, height:72, borderRadius:24, background:`linear-gradient(135deg, ${T.sage}, ${T.sageDark})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:16, boxShadow:T.shadowGlow }}>
+              <I.Sparkle s={32} c="#fff" />
+            </div>
+            <h2 style={{ fontFamily:T.fontDisplay, fontSize:26, fontWeight:600, color:T.charcoal, marginBottom:8, textAlign:"center" }}>Your home profile is ready</h2>
+            <p style={{ fontSize:15, color:T.textSoft, textAlign:"center", lineHeight:1.55 }}>Bodie has everything needed to build your personalised maintenance plan.</p>
+          </div>
+        </Fade>
+
+        <Fade delay={150}>
+          <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:28 }}>
+            <div style={{ background:T.warmWhite, border:`1.5px solid ${T.border}`, borderRadius:T.r16, padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
+              <span style={{ fontSize:24 }}>🏠</span>
+              <div>
+                <div style={{ fontSize:14, fontWeight:600, color:T.text }}>{homeName || "My Home"}</div>
+                <div style={{ fontSize:12, color:T.textMuted }}>{homeLabel}{homeYear ? ` · Built ${homeYear}` : ""}</div>
+              </div>
+            </div>
+            <div style={{ background:T.warmWhite, border:`1.5px solid ${T.border}`, borderRadius:T.r16, padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
+              <span style={{ fontSize:24 }}>🎥</span>
+              <div>
+                <div style={{ fontSize:14, fontWeight:600, color:T.text }}>Home video uploaded</div>
+                <div style={{ fontSize:12, color:T.textMuted }}>AI scanned your spaces & systems</div>
+              </div>
+            </div>
+            <div style={{ background:T.warmWhite, border:`1.5px solid ${T.border}`, borderRadius:T.r16, padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
+              <span style={{ fontSize:24 }}>🔧</span>
+              <div>
+                <div style={{ fontSize:14, fontWeight:600, color:T.text }}>{selectedAssets.length > 0 ? `${selectedAssets.length} systems selected` : "Home systems profiled"}</div>
+                <div style={{ fontSize:12, color:T.textMuted }}>{selectedAssets.length > 0 ? selectedAssets.slice(0,3).join(", ") + (selectedAssets.length > 3 ? "…" : "") : "Ready for maintenance planning"}</div>
+              </div>
+            </div>
+          </div>
+        </Fade>
+
+        <Fade delay={280}>
+          <button onClick={() => setInsightPhase(1)} style={{ ...primaryBtn, padding:"19px", background:`linear-gradient(135deg, ${T.sage}, ${T.sageDark})`, boxShadow:`0 6px 24px ${T.sage}44`, marginBottom:10 }}>
+            <I.Sparkle s={20} c="#fff" /> Get My AI Maintenance Plan
+          </button>
+          <p style={{ textAlign:"center", fontSize:12, color:T.textMuted, marginTop:8 }}>Personalised for your home · Takes 3 seconds</p>
+        </Fade>
+      </div>
+    );
+  };
+
+  // ── AI MAINTENANCE PLAN ──────────────────────────────────────────────────
+  const AiMaintenancePlanScreen = () => {
+    const assetsToShow = selectedAssets.length > 0 ? selectedAssets : (persona?.assets || []);
+    const tasksWithAssets = assetsToShow
+      .map(asset => ({ asset, tasks: MAINTENANCE_TASKS[asset] || [] }))
+      .filter(({ tasks }) => tasks.length > 0);
+    const totalTasks = tasksWithAssets.reduce((sum, { tasks }) => sum + tasks.length, 0);
+    const urgencyColor = (u) => u === "high" ? T.coral : u === "medium" ? T.gold : T.sage;
+
+    return (
+      <div style={{ padding:"20px 24px" }}>
+        <Fade>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+            <I.Sparkle s={22} c={T.sage} />
+            <h2 style={{ fontFamily:T.fontDisplay, fontSize:24, fontWeight:600, color:T.charcoal }}>Your Maintenance Plan</h2>
+          </div>
+          <p style={{ fontSize:14, color:T.textMuted, marginBottom:24 }}>Personalised by Bodie for {homeName || "your home"} · {homeLabel}</p>
+        </Fade>
+
+        {tasksWithAssets.map(({ asset, tasks }, ai) => (
+          <Fade key={asset} delay={100 + ai * 60}>
+            <div style={{ marginBottom:20 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:T.sage, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:10 }}>{asset}</div>
+              <div style={{ background:T.warmWhite, border:`1px solid ${T.border}`, borderRadius:T.r16, overflow:"hidden" }}>
+                {tasks.map((t, ti) => (
+                  <div key={ti} style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 16px", borderTop:ti?`1px solid ${T.borderSoft}`:"none" }}>
+                    <div style={{ width:8, height:8, borderRadius:4, background:urgencyColor(t.urgency), flexShrink:0 }} />
+                    <span style={{ fontSize:18, flexShrink:0 }}>{t.icon}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:14, fontWeight:500, color:T.text }}>{t.task}</div>
+                      <div style={{ fontSize:12, color:T.textMuted, marginTop:2 }}>{t.period}</div>
+                    </div>
+                    <span style={{ fontSize:11, fontWeight:600, color:urgencyColor(t.urgency), background:t.urgency==="high"?T.coralSoft:t.urgency==="medium"?T.goldSoft:T.sageGhost, padding:"3px 8px", borderRadius:T.rFull }}>
+                      {t.urgency}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Fade>
+        ))}
+
+        <Fade delay={300}>
+          <div style={{ background:`linear-gradient(135deg, #E8F5F5, ${T.sageGhost})`, border:`1.5px solid ${T.sageSoft}`, borderRadius:T.r16, padding:"14px 18px", display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
+            <I.Check s={18} c={T.sage} />
+            <span style={{ fontSize:14, fontWeight:600, color:T.sage }}>{totalTasks} tasks scheduled · Reminders set</span>
+          </div>
+          <button onClick={() => { addMilestone("plan_saved"); go("signup"); }} style={primaryBtn}>
+            Save My Plan — Create Account <I.Arrow c="#fff" />
+          </button>
+        </Fade>
+      </div>
+    );
+  };
+
+  // ── DOC UPLOAD ───────────────────────────────────────────────────────────
+  const DocUploadScreen = () => {
+    const handleDocFile = (file) => {
+      if (!file) return;
+      setDocUploadFileNames(prev => [...prev, file.name]);
+      setDocUploadState("processing");
+    };
+    const docProcSteps = ["Files received","Scanning documents…","Identifying improvements…","Building your value profile…"];
+    const uploadedCount = docUploadFileNames.length;
+
+    return (
+      <div style={{ padding:"20px 24px" }}>
+        <Fade><p style={{ fontSize:12, fontWeight:700, color:T.sage, textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Step 4 of 4</p></Fade>
+        <Fade delay={80}><h2 style={{ fontFamily:T.fontDisplay, fontSize:26, fontWeight:600, lineHeight:1.2, color:T.charcoal, marginBottom:6 }}>Document your home</h2></Fade>
+        <Fade delay={150}><p style={{ fontSize:15, color:T.textSoft, lineHeight:1.5, marginBottom:28 }}>Upload photos, receipts, permits, or inspection reports. Bodie will build your value protection profile.</p></Fade>
+
+        {docUploadState === "idle" && (
+          <Fade delay={200}>
+            <input ref={docUploadFileRef} type="file" accept="image/*,application/pdf" style={{ display:"none" }}
+              onChange={e => handleDocFile(e.target.files?.[0])} />
+            <div
+              onClick={() => docUploadFileRef.current?.click()}
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => { e.preventDefault(); handleDocFile(e.dataTransfer.files?.[0]); }}
+              onMouseOver={e => { e.currentTarget.style.borderColor=T.gold; e.currentTarget.style.background=T.goldSoft; }}
+              onMouseOut={e => { e.currentTarget.style.borderColor="#E8D5A3"; e.currentTarget.style.background:"#FDFAF2"; }}
+              style={{ border:"2px dashed #E8D5A3", borderRadius:T.r20, padding:"44px 24px", textAlign:"center", cursor:"pointer", background:"#FDFAF2", transition:"all .2s", marginBottom:12 }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>📸</div>
+              <div style={{ fontSize:15, fontWeight:600, color:T.text, marginBottom:4 }}>Tap to upload photos or documents</div>
+              <div style={{ fontSize:13, color:T.textMuted }}>JPG, PDF, PNG · Receipts, permits, inspection reports</div>
+            </div>
+            <input id="doc-camera" type="file" accept="image/*" capture="environment" style={{ display:"none" }}
+              onChange={e => handleDocFile(e.target.files?.[0])} />
+            <label htmlFor="doc-camera" style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, width:"100%", padding:"15px", borderRadius:T.r16, border:`1.5px solid ${T.border}`, background:T.warmWhite, cursor:"pointer", fontFamily:T.font, fontSize:14, fontWeight:500, color:T.textSoft, marginBottom:20, boxSizing:"border-box" }}>
+              📷 Take a photo instead
+            </label>
+          </Fade>
+        )}
+
+        {docUploadState === "processing" && (
+          <Fade delay={0}>
+            <div style={{ background:T.warmWhite, borderRadius:T.r20, padding:24, border:`1.5px solid #E8D5A3`, marginBottom:20 }}>
+              <div style={{ fontSize:13, color:T.textMuted, marginBottom:18 }}>📄 {docUploadFileNames[docUploadFileNames.length-1]}</div>
+              {docProcSteps.map((label, i) => {
+                const done = docUploadProcStep > i, active = docUploadProcStep === i, pending = docUploadProcStep < i;
+                return (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14, opacity:pending?.3:1, transition:"all .5s" }}>
+                    <div style={{ width:30, height:30, borderRadius:10, flexShrink:0, background:done?T.gold:active?"#F9EDD0":T.borderSoft, display:"flex", alignItems:"center", justifyContent:"center", transition:"all .4s" }}>
+                      {done ? <I.Check s={14} c="#fff" /> : active ? <div style={{ width:14, height:14, border:`2px solid ${T.gold}`, borderTopColor:"transparent", borderRadius:"50%", animation:"spin .7s linear infinite" }} /> : <div style={{ width:6, height:6, borderRadius:3, background:T.textMuted, opacity:.4 }} />}
+                    </div>
+                    <span style={{ fontSize:14, fontWeight:pending?400:600, color:pending?T.textMuted:T.text }}>{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </Fade>
+        )}
+
+        {docUploadState === "done" && (
+          <Fade delay={0}>
+            <div style={{ background:`linear-gradient(135deg, ${T.goldSoft}, #FFFDF5)`, borderRadius:T.r20, padding:22, border:`1.5px solid ${T.gold}44`, marginBottom:20 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
+                <div style={{ width:44, height:44, borderRadius:14, background:`linear-gradient(135deg, ${T.gold}, #C49840)`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <I.Check s={22} c="#fff" />
+                </div>
+                <div>
+                  <div style={{ fontSize:16, fontWeight:700, color:T.charcoal }}>✓ Value profile created!</div>
+                  <div style={{ fontSize:13, color:T.textSoft, marginTop:2 }}>We found {uploadedCount} document{uploadedCount !== 1 ? "s" : ""} covering your home's improvements and condition.</div>
+                </div>
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                {["✓ Receipts","✓ Inspection reports","✓ Permits"].map((tag, i) => (
+                  <span key={i} style={{ padding:"5px 12px", borderRadius:T.rFull, fontSize:12, fontWeight:600, background:"rgba(212,168,83,0.12)", color:T.gold, border:`1px solid ${T.gold}33` }}>{tag}</span>
+                ))}
+              </div>
+            </div>
+            <button onClick={() => { addBrevo("docs_uploaded"); addMilestone("doc_upload"); go("value-report-cta"); }} style={{ ...primaryBtn, background:`linear-gradient(135deg, ${T.gold}, #C49840)`, boxShadow:`0 4px 16px ${T.gold}44` }}>
+              Analyse My Home's Value <I.Arrow c="#fff" />
+            </button>
+          </Fade>
+        )}
+
+        {docUploadState === "idle" && (
+          <Fade delay={360}>
+            <button onClick={() => go("value-report-cta")} style={{ width:"100%", padding:"14px", background:"none", border:"none", cursor:"pointer", fontFamily:T.font, fontSize:14, color:T.textMuted }}>
+              Skip for now
+            </button>
+          </Fade>
+        )}
+      </div>
+    );
+  };
+
+  // ── VALUE REPORT CTA ─────────────────────────────────────────────────────
+  const ValueReportCtaScreen = () => {
+    const vrSteps = ["Analysing your home profile…","Comparing to similar homes…","Generating your value report…"];
+
+    if (valueReportPhase === 1) {
+      return (
+        <div style={{ padding:"20px 24px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:420 }}>
+          <Fade>
+            <div style={{ width:64, height:64, borderRadius:20, background:`linear-gradient(135deg, ${T.gold}, #C49840)`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24 }}>
+              <div style={{ width:28, height:28, border:"3px solid rgba(255,255,255,0.4)", borderTopColor:"#fff", borderRadius:"50%", animation:"spin .7s linear infinite" }} />
+            </div>
+          </Fade>
+          <Fade delay={100}><h2 style={{ fontFamily:T.fontDisplay, fontSize:24, fontWeight:600, color:T.charcoal, marginBottom:24, textAlign:"center" }}>Generating your report…</h2></Fade>
+          <div style={{ width:"100%", maxWidth:320 }}>
+            {vrSteps.map((label, i) => {
+              const done = valueReportLoadStep > i, active = valueReportLoadStep === i, pending = valueReportLoadStep < i;
+              return (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16, opacity:pending?.3:1, transition:"all .5s" }}>
+                  <div style={{ width:30, height:30, borderRadius:10, flexShrink:0, background:done?T.gold:active?"#F9EDD0":T.borderSoft, display:"flex", alignItems:"center", justifyContent:"center", transition:"all .4s" }}>
+                    {done ? <I.Check s={14} c="#fff" /> : active ? <div style={{ width:14, height:14, border:`2px solid ${T.gold}`, borderTopColor:"transparent", borderRadius:"50%", animation:"spin .7s linear infinite" }} /> : <div style={{ width:6, height:6, borderRadius:3, background:T.textMuted, opacity:.4 }} />}
+                  </div>
+                  <span style={{ fontSize:14, fontWeight:pending?400:600, color:pending?T.textMuted:T.text }}>{label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ padding:"20px 24px" }}>
+        <Fade>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:28 }}>
+            <div style={{ width:72, height:72, borderRadius:24, background:`linear-gradient(135deg, ${T.gold}, #C49840)`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:16, boxShadow:`0 0 0 4px ${T.gold}22` }}>
+              <I.Sparkle s={32} c="#fff" />
+            </div>
+            <h2 style={{ fontFamily:T.fontDisplay, fontSize:26, fontWeight:600, color:T.charcoal, marginBottom:8, textAlign:"center" }}>Ready to protect your home's value</h2>
+            <p style={{ fontSize:15, color:T.textSoft, textAlign:"center", lineHeight:1.55 }}>Bodie will analyse your home profile and generate a personalised value report.</p>
+          </div>
+        </Fade>
+
+        <Fade delay={150}>
+          <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:28 }}>
+            <div style={{ background:T.warmWhite, border:`1.5px solid ${T.border}`, borderRadius:T.r16, padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
+              <span style={{ fontSize:24 }}>🏠</span>
+              <div>
+                <div style={{ fontSize:14, fontWeight:600, color:T.text }}>{homeName || "My Home"}</div>
+                <div style={{ fontSize:12, color:T.textMuted }}>{homeLabel}{homeYear ? ` · Built ${homeYear}` : ""}</div>
+              </div>
+            </div>
+            <div style={{ background:T.warmWhite, border:`1.5px solid ${T.border}`, borderRadius:T.r16, padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
+              <span style={{ fontSize:24 }}>📄</span>
+              <div>
+                <div style={{ fontSize:14, fontWeight:600, color:T.text }}>Documents uploaded</div>
+                <div style={{ fontSize:12, color:T.textMuted }}>Photos, receipts & reports scanned</div>
+              </div>
+            </div>
+            <div style={{ background:T.warmWhite, border:`1.5px solid ${T.border}`, borderRadius:T.r16, padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
+              <span style={{ fontSize:24 }}>✅</span>
+              <div>
+                <div style={{ fontSize:14, fontWeight:600, color:T.text }}>Profile complete</div>
+                <div style={{ fontSize:12, color:T.textMuted }}>Ready for value analysis</div>
+              </div>
+            </div>
+          </div>
+        </Fade>
+
+        <Fade delay={280}>
+          <button onClick={() => setValueReportPhase(1)} style={{ ...primaryBtn, padding:"19px", background:`linear-gradient(135deg, ${T.gold}, #C49840)`, boxShadow:`0 6px 24px ${T.gold}44`, marginBottom:10 }}>
+            <I.Sparkle s={20} c="#fff" /> Get My Home Value Report
+          </button>
+          <p style={{ textAlign:"center", fontSize:12, color:T.textMuted, marginTop:8 }}>Personalised for your home · Takes 3 seconds</p>
+        </Fade>
+      </div>
+    );
+  };
+
+  // ── VALUE REPORT ─────────────────────────────────────────────────────────
+  const ValueReportScreen = () => (
+    <div style={{ padding:"20px 24px" }}>
+      <Fade>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+          <span style={{ fontSize:22 }}>🏠</span>
+          <h2 style={{ fontFamily:T.fontDisplay, fontSize:24, fontWeight:600, color:T.charcoal }}>Home Value Report</h2>
+        </div>
+        <p style={{ fontSize:14, color:T.textMuted, marginBottom:24 }}>{homeName || "Your home"} · {homeLabel}{homeYear ? ` · Built ${homeYear}` : ""}</p>
+      </Fade>
+
+      <Fade delay={100}>
+        <div style={{ background:T.warmWhite, border:`1px solid ${T.border}`, borderRadius:T.r20, padding:20, marginBottom:20 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            <span style={{ fontSize:15, fontWeight:700, color:T.charcoal }}>Value Health Score</span>
+            <span style={{ fontSize:28, fontWeight:700, color:T.gold, fontFamily:T.fontDisplay }}>78<span style={{ fontSize:16, color:T.textMuted, fontWeight:400 }}>/100</span></span>
+          </div>
+          <div style={{ height:10, background:T.borderSoft, borderRadius:5, overflow:"hidden" }}>
+            <div style={{ height:"100%", width:"78%", background:`linear-gradient(90deg, ${T.gold}, #E8BC5C)`, borderRadius:5, transition:"width .8s cubic-bezier(.2,.8,.3,1)" }} />
+          </div>
+          <p style={{ fontSize:12, color:T.textMuted, marginTop:8 }}>Above average for homes in your area</p>
+        </div>
+      </Fade>
+
+      <Fade delay={160}>
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:T.charcoal, marginBottom:10 }}>✅ Protecting Your Value</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {["Maintenance records on file","Home profile documented","Regular upkeep logged"].map((item, i) => (
+              <div key={i} style={{ background:T.sageGhost, border:`1px solid ${T.sageSoft}`, borderRadius:T.r12, padding:"12px 16px", display:"flex", alignItems:"center", gap:10 }}>
+                <I.Check s={14} c={T.sage} />
+                <span style={{ fontSize:14, color:T.text }}>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Fade>
+
+      <Fade delay={220}>
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:T.charcoal, marginBottom:10 }}>⚠️ Risks to Address</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {["Roof inspection overdue — affects resale","No electrical panel update on record","Improvement receipts not uploaded"].map((item, i) => (
+              <div key={i} style={{ background:T.goldSoft, border:`1px solid ${T.gold}33`, borderRadius:T.r12, padding:"12px 16px", display:"flex", alignItems:"center", gap:10 }}>
+                <span style={{ fontSize:14, color:T.gold, fontWeight:700, flexShrink:0 }}>⚠️</span>
+                <span style={{ fontSize:14, color:T.textSoft }}>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Fade>
+
+      <Fade delay={280}>
+        <div style={{ marginBottom:24 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:T.charcoal, marginBottom:10 }}>📋 Top Actions</div>
+          <div style={{ background:T.warmWhite, border:`1px solid ${T.border}`, borderRadius:T.r16, overflow:"hidden" }}>
+            {[
+              "Document recent upgrades with photos & receipts",
+              "Schedule a pre-listing inspection",
+              "Upload your insurance policy",
+              "Store all warranties in your document vault",
+              "Log any permits for work done",
+            ].map((action, i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 16px", borderTop:i?`1px solid ${T.borderSoft}`:"none" }}>
+                <div style={{ width:22, height:22, borderRadius:T.rFull, background:T.sageGhost, border:`1px solid ${T.sageSoft}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:T.sage, flexShrink:0 }}>{i+1}</div>
+                <span style={{ fontSize:14, color:T.text }}>{action}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Fade>
+
+      <Fade delay={340}>
+        <button onClick={() => { addMilestone("value_report_saved"); go("signup"); }} style={{ ...primaryBtn, background:`linear-gradient(135deg, ${T.gold}, #C49840)`, boxShadow:`0 4px 16px ${T.gold}44`, marginBottom:8 }}>
+          Save My Report — Create Free Account <I.Arrow c="#fff" />
+        </button>
+        <p style={{ textAlign:"center", fontSize:12, color:T.textMuted, marginTop:8 }}>Your report is saved forever · No credit card</p>
+      </Fade>
     </div>
   );
 
@@ -987,14 +1538,21 @@ export default function AbodioPrototype() {
   // ═══════════════════════════════════════════════════════════════════════════
   // LAYOUT
   // ═══════════════════════════════════════════════════════════════════════════
-  const screens = { splash: Splash, welcome: Welcome, goal: GoalScreen, "home-type": HomeTypeScreen, "home-details": HomeDetailsScreen, "video-upload": VideoUploadScreen, challenge: ChallengeScreen, "bodie-magic": BodieMagic, signup: SignupScreen, dashboard: Dashboard };
+  const screens = { splash: Splash, welcome: Welcome, goal: GoalScreen, "home-type": HomeTypeScreen, "home-details": HomeDetailsScreen, "video-upload": VideoUploadScreen, challenge: ChallengeScreen, "bodie-magic": BodieMagic, signup: SignupScreen, dashboard: Dashboard, "asset-input": AssetInputScreen, "ai-insight-cta": AiInsightCtaScreen, "ai-maintenance-plan": AiMaintenancePlanScreen, "doc-upload": DocUploadScreen, "value-report-cta": ValueReportCtaScreen, "value-report": ValueReportScreen };
   const Screen = screens[screen] || Welcome;
   const showNav = !["splash","welcome"].includes(screen);
-  const showSteps = ["goal","home-type","home-details","challenge"].includes(screen);
-  const stepIdx = ["goal","home-type","home-details","challenge"].indexOf(screen);
-  const flowOrder = goal === "get-organized"
-    ? ["splash","welcome","goal","home-type","home-details","video-upload","challenge","bodie-magic","signup","dashboard"]
-    : ["splash","welcome","goal","home-type","home-details","challenge","bodie-magic","signup","dashboard"];
+  const stepScreens =
+    goal === "stay-maintained" ? ["goal","home-type","home-details","video-upload","asset-input"] :
+    goal === "protect-value"   ? ["goal","home-type","home-details","doc-upload"] :
+    goal === "get-organized"   ? ["goal","home-type","home-details","video-upload"] :
+                                 ["goal","home-type","home-details","challenge"];
+  const showSteps = stepScreens.includes(screen);
+  const stepIdx   = stepScreens.indexOf(screen);
+  const flowOrder =
+    goal === "get-organized"   ? ["splash","welcome","goal","home-type","home-details","video-upload","challenge","bodie-magic","signup","dashboard"] :
+    goal === "stay-maintained" ? ["splash","welcome","goal","home-type","home-details","video-upload","asset-input","ai-insight-cta","ai-maintenance-plan","signup","dashboard"] :
+    goal === "protect-value"   ? ["splash","welcome","goal","home-type","home-details","doc-upload","value-report-cta","value-report","signup","dashboard"] :
+                                 ["splash","welcome","goal","home-type","home-details","challenge","bodie-magic","signup","dashboard"];
 
   const globalStyles = (
     <>
@@ -1070,7 +1628,7 @@ export default function AbodioPrototype() {
           )}
           {showSteps && (
             <div style={{ padding:"16px 48px 0", maxWidth:680, width:"100%" }}>
-              <Steps current={stepIdx} />
+              <Steps current={stepIdx} total={stepScreens.length} />
             </div>
           )}
           <div ref={scrollRef} style={{ flex:1, overflowY:"auto", maxWidth:680, width:"100%", padding:"0 48px 48px" }}>
@@ -1118,7 +1676,7 @@ export default function AbodioPrototype() {
           </div>
         )}
 
-        {showSteps && <Steps current={stepIdx} />}
+        {showSteps && <Steps current={stepIdx} total={stepScreens.length} />}
 
         <div ref={scrollRef} style={{ flex:1, overflowY:"auto", overflowX:"hidden", WebkitOverflowScrolling:"touch" }}>
           {Screen()}
