@@ -1103,7 +1103,7 @@ export default function AbodioPrototype() {
               onDragOver={e => e.preventDefault()}
               onDrop={e => { e.preventDefault(); handleDocFile(e.dataTransfer.files?.[0]); }}
               onMouseOver={e => { e.currentTarget.style.borderColor=T.gold; e.currentTarget.style.background=T.goldSoft; }}
-              onMouseOut={e => { e.currentTarget.style.borderColor="#E8D5A3"; e.currentTarget.style.background:"#FDFAF2"; }}
+              onMouseOut={e => { e.currentTarget.style.borderColor="#E8D5A3"; e.currentTarget.style.background="#FDFAF2"; }}
               style={{ border:"2px dashed #E8D5A3", borderRadius:T.r20, padding:"44px 24px", textAlign:"center", cursor:"pointer", background:"#FDFAF2", transition:"all .2s", marginBottom:12 }}>
               <div style={{ fontSize:48, marginBottom:12 }}>📸</div>
               <div style={{ fontSize:15, fontWeight:600, color:T.text, marginBottom:4 }}>Tap to upload photos or documents</div>
