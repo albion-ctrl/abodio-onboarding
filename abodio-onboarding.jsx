@@ -325,6 +325,9 @@ export default function AbodioPrototype() {
   const [videoState, setVideoState]     = useState("idle"); // idle | processing | done
   const [videoFileName, setVideoFileName] = useState("");
   const [videoProcStep, setVideoProcStep] = useState(0);
+  const [signupName, setSignupName]     = useState("");
+  const [signupEmail, setSignupEmail]   = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
   const videoFileRef = useRef(null);
   const videoTimersRef = useRef([]);
   const [challenge, setChallenge] = useState(null);
@@ -347,7 +350,30 @@ export default function AbodioPrototype() {
   const addMilestone = (m) => setSimState(p => ({ ...p, milestones: [...new Set([...p.milestones, m])] }));
   const addBrevo = (t) => setSimState(p => ({ ...p, brevo: [...new Set([...p.brevo, t])] }));
 
-  const go = useCallback((s) => { setScreen(s); scrollRef.current?.scrollTo?.({ top: 0, behavior: "auto" }); }, []);
+  const go = useCallback((s) => {
+    if (screen === "home-details") {
+      setHomeName("");
+      setHomeYear("");
+      setHomeAddressData({ fullAddress:"", placeId:"", street:"", city:"", state:"", zipCode:"", country:"" });
+    }
+    if (screen === "video-upload") {
+      videoTimersRef.current.forEach(clearTimeout);
+      setVideoState("idle");
+      setVideoFileName("");
+      setVideoProcStep(0);
+    }
+    if (screen === "signup") {
+      setSignupName("");
+      setSignupEmail("");
+      setSignupPassword("");
+    }
+    if (screen === "dashboard") {
+      setBodieInput("");
+      setShowBodie(false);
+    }
+    setScreen(s);
+    scrollRef.current?.scrollTo?.({ top: 0, behavior: "auto" });
+  }, [screen]);
 
   useEffect(() => { if (screen === "splash") { const t = setTimeout(() => go("welcome"), 2200); return () => clearTimeout(t); } }, [screen, go]);
 
@@ -384,18 +410,6 @@ export default function AbodioPrototype() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Reset home detail inputs when navigating back before step 3
-  useEffect(() => {
-    if (["splash", "welcome", "goal", "home-type"].includes(screen)) {
-      setHomeName("");
-      setHomeYear("");
-      setHomeAddressData(emptyAddr);
-      videoTimersRef.current.forEach(clearTimeout);
-      setVideoState("idle");
-      setVideoFileName("");
-      setVideoProcStep(0);
-    }
-  }, [screen]);
 
   const completedCount = Object.values(checks).filter(Boolean).length;
   const totalChecks = persona?.checklist?.length || 4;
@@ -783,10 +797,12 @@ export default function AbodioPrototype() {
       </Fade>
       <Fade delay={200}>
         <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:20 }}>
-          {["Full name", "Email address", "Create password"].map((ph, i) => (
-            <input key={i} type={i===2?"password":i===1?"email":"text"} placeholder={ph} style={inputStyle}
-              onFocus={e => e.target.style.borderColor=T.sage} onBlur={e => e.target.style.borderColor=T.border} />
-          ))}
+          <input type="text" placeholder="Full name" value={signupName} onChange={e => setSignupName(e.target.value)} style={inputStyle}
+            onFocus={e => e.target.style.borderColor=T.sage} onBlur={e => e.target.style.borderColor=T.border} />
+          <input type="email" placeholder="Email address" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} style={inputStyle}
+            onFocus={e => e.target.style.borderColor=T.sage} onBlur={e => e.target.style.borderColor=T.border} />
+          <input type="password" placeholder="Create password" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} style={inputStyle}
+            onFocus={e => e.target.style.borderColor=T.sage} onBlur={e => e.target.style.borderColor=T.border} />
         </div>
       </Fade>
       <Fade delay={300}>
